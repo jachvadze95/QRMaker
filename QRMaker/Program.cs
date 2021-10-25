@@ -18,10 +18,22 @@ namespace QRMaker
             StlFile stlFile = new StlFile();
             stlFile.SolidName = "my-solid";
 
+            bool sw = true;
 
-            //stlFile.Triangles.AddRange(BuildSquareBlock(0));
-            stlFile.Triangles.AddRange(BuildSquareBlock(1, 0));
-            stlFile.Triangles.AddRange(BuildSquareBlock(2, 0));
+            for (int i = 0; i < 8; i++)
+            {
+                for (int j = 0; j < 8; j++)
+                {
+                    if (sw)
+                    {
+                        stlFile.Triangles.AddRange(BuildSquareBlock(i, j));           
+                    }
+
+                    sw = !sw;
+                }
+
+                sw = !sw;
+            }
 
 
             using (FileStream fs = new FileStream(@"C:\Users\jachv\source\repos\QRMaker\QRMaker\bin\Debug\net5.0\ref\test.stl", FileMode.OpenOrCreate))
