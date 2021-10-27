@@ -1,5 +1,6 @@
 ﻿
 using IxMilia.Stl;
+using QRCoder;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -15,28 +16,29 @@ namespace QRMaker
 
         static void Main(string[] args)
         {
+            QRCodeGenerator qrGenerator = new QRCodeGenerator();
+            QRCodeData qrCodeData = qrGenerator.CreateQrCode("https://testlink.ge", QRCodeGenerator.ECCLevel.Q);
+            QRCode qrCode = new QRCode(qrCodeData);
+
+            var qrRawData = qrCodeData.GetRawData(QRCodeData.Compression.GZip);
+            var qrCodeBitmap = qrCode.GetGraphic(1);
+
             StlFile stlFile = new StlFile();
             stlFile.SolidName = "my-solid";
 
-            bool sw = true;
-
-            for (int i = 0; i < 8; i++)
+            for (int widthIndex = 1; widthIndex < qrCodeBitmap.Width; widthIndex++)
             {
-                for (int j = 0; j < 8; j++)
+                for (int heightIndex = 0; heightIndex < qrCodeBitmap.Height; heightIndex++)
                 {
-                    if (sw)
+                    var currentPixel = qrCodeBitmap.GetPixel(widthIndex, heightIndex);
+                    if (currentPixel.GetBrightness() != 0)
                     {
-                        stlFile.Triangles.AddRange(BuildSquareBlock(i, j));           
+                        stlFile.Triangles.AddRange(BuildSquareBlock(widthIndex,heightIndex));
                     }
-
-                    sw = !sw;
                 }
-
-                sw = !sw;
             }
 
-
-            using (FileStream fs = new FileStream(@"C:\Users\jachv\source\repos\QRMaker\QRMaker\bin\Debug\net5.0\ref\test.stl", FileMode.OpenOrCreate))
+            using (FileStream fs = new FileStream("./out/file.stl", FileMode.OpenOrCreate))
             {
                 stlFile.Save(fs);
             }
