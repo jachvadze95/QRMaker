@@ -13,32 +13,35 @@ namespace QRMaker
     class Program
     {
         private static float _qrHeight = 0.5f;
+        private static float cubeLength = 1.2f;
 
         static void Main(string[] args)
         {
             QRCodeGenerator qrGenerator = new QRCodeGenerator();
-            QRCodeData qrCodeData = qrGenerator.CreateQrCode("https://testlink.ge", QRCodeGenerator.ECCLevel.Q);
+            QRCodeData qrCodeData = qrGenerator.CreateQrCode("https://kiai.ge/manual", QRCodeGenerator.ECCLevel.M);
             QRCode qrCode = new QRCode(qrCodeData);
 
             var qrRawData = qrCodeData.GetRawData(QRCodeData.Compression.GZip);
             var qrCodeBitmap = qrCode.GetGraphic(1);
-
+ 
             StlFile stlFile = new StlFile();
             stlFile.SolidName = "my-solid";
+            int borderDecrease = 3;
 
-            for (int widthIndex = 1; widthIndex < qrCodeBitmap.Width; widthIndex++)
+            for (int widthIndex = borderDecrease; widthIndex < qrCodeBitmap.Width- borderDecrease; widthIndex++)
             {
-                for (int heightIndex = 0; heightIndex < qrCodeBitmap.Height; heightIndex++)
+                for (int heightIndex = borderDecrease; heightIndex < qrCodeBitmap.Height- borderDecrease; heightIndex++)
                 {
-                    var currentPixel = qrCodeBitmap.GetPixel(widthIndex, heightIndex);
+                    var currentPixel = qrCodeBitmap.GetPixel(heightIndex, widthIndex);
                     if (currentPixel.GetBrightness() != 0)
                     {
                         stlFile.Triangles.AddRange(BuildSquareBlock(widthIndex,heightIndex));
                     }
+                     
                 }
             }
 
-            using (FileStream fs = new FileStream("./out/file.stl", FileMode.OpenOrCreate))
+            using (FileStream fs = new FileStream("./file.stl", FileMode.OpenOrCreate))
             {
                 stlFile.Save(fs);
             }
@@ -52,25 +55,27 @@ namespace QRMaker
                 stlFile = StlFile.Load(fs);
 
                 var groupedByNomal = stlFile.Triangles.GroupBy(x => x.Normal);
-            }
+            } 
         }
 
-        static IEnumerable<StlTriangle> BuildSquareBlock(int indexX, int indexY)
+        static IEnumerable<StlTriangle> BuildSquareBlock(float indexX, float indexY)
         {
+            indexX *= cubeLength;
+            indexY *= cubeLength;
 
             List<StlVertex> startingPoints = new List<StlVertex>(){
                 new StlVertex(indexX, indexY, 0),
-                new StlVertex(indexX + 1,indexY + 1, 0),
-                new StlVertex(indexX + 1,indexY,_qrHeight),
-                new StlVertex(indexX,indexY + 1,_qrHeight)
+                new StlVertex(indexX + cubeLength,indexY + cubeLength, 0),
+                new StlVertex(indexX + cubeLength,indexY,_qrHeight),
+                new StlVertex(indexX,indexY + cubeLength,_qrHeight)
             };
 
             var response = new List<StlTriangle>();
 
             foreach (var nextPoint in startingPoints)
             {
-                var xDirection = nextPoint.X > indexX ? -1 : 1;
-                var yDirection = nextPoint.Y > indexY ? -1 : 1;
+                var xDirection = nextPoint.X > indexX ? -cubeLength : cubeLength;
+                var yDirection = nextPoint.Y > indexY ? -cubeLength : cubeLength;
 
                 foreach (var plane in Enum.GetValues(typeof(Plane)))
                 {
@@ -81,7 +86,7 @@ namespace QRMaker
             return response;
         }
 
-        static StlTriangle GetAdjacentTriangles(StlVertex point, Plane plane, int xDirection, int yDirection)
+        static StlTriangle GetAdjacentTriangles(StlVertex point, Plane plane, float xDirection, float yDirection)
         {
             StlNormal normal;
             bool isTop = point.Z > 0;
@@ -90,13 +95,13 @@ namespace QRMaker
             switch (plane)
             {
                 case Plane.XY:
-                    normal = new StlNormal(0, 0, isTop ? 1 : -1);
+                    normal = new StlNormal(0, 0, isTop ? cubeLength : -cubeLength);
                     return new StlTriangle(normal, new StlVertex(point.X, point.Y, point.Z), new StlVertex(point.X + xDirection, point.Y, point.Z), new StlVertex(point.X, point.Y + yDirection, point.Z));
                 case Plane.YZ:
-                    normal = new StlNormal(point.X > 0 ? 1 : -1, 0, 0);
+                    normal = new StlNormal(point.X > 0 ? cubeLength : -cubeLength, 0, 0);
                     return new StlTriangle(normal, new StlVertex(point.X, point.Y, point.Z), new StlVertex(point.X, point.Y + yDirection, point.Z), new StlVertex(point.X, point.Y, zDirection));
                 case Plane.XZ:
-                    normal = new StlNormal(0, point.Y > 0 ? 1 : -1, 0);
+                    normal = new StlNormal(0, point.Y > 0 ? cubeLength : -cubeLength, 0);
                     return new StlTriangle(normal, new StlVertex(point.X, point.Y, point.Z), new StlVertex(point.X + xDirection, point.Y, point.Z), new StlVertex(point.X, point.Y, zDirection));
                 default:
                     return null;
