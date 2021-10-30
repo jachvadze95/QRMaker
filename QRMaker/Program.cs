@@ -24,7 +24,6 @@ namespace QRMaker
 
             var baseStlPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), $@"Files\{_qrBaseStlFileName}");
             var baseStl = OpenStl(baseStlPath);
-            var baseminmaxbefore = GetSolidMinMaxCoordinates(baseStl.Triangles);
             var normalizedBaseStl = NormalizedBaseStlTriangles(baseStl.Triangles);
             var baseMinMaxCoords = GetSolidMinMaxCoordinates(normalizedBaseStl);
             var baseWidth = Math.Max(baseMinMaxCoords.xMax, baseMinMaxCoords.xMin) - Math.Min(baseMinMaxCoords.xMax, baseMinMaxCoords.xMin);
@@ -45,7 +44,7 @@ namespace QRMaker
                     var currentPixel = qrCodeBitmap.GetPixel(heightIndex, widthIndex);
                     if (currentPixel.GetBrightness() != 0)
                     {
-                        stlFile.Triangles.AddRange(BuildSquareBlock(widthIndex, heightIndex, 0, 0, baseMinMaxCoords.zMax));
+                        stlFile.Triangles.AddRange(BuildSquareBlock(widthIndex, heightIndex, zOffset: baseMinMaxCoords.zMax));
                     }
                 }
             }
@@ -86,7 +85,7 @@ namespace QRMaker
             return stlFile;
         }
 
-        static IEnumerable<StlTriangle> BuildSquareBlock(float indexX, float indexY, float baseXOffset, float baseYOffset, float zOffset)
+        static IEnumerable<StlTriangle> BuildSquareBlock(float indexX, float indexY, float baseXOffset = 0, float baseYOffset = 0, float zOffset = 0)
         {
             indexX *= _cubeLength;
             indexY *= _cubeLength;
