@@ -14,12 +14,13 @@ namespace QRMaker
     class Program
     {
         private static float _qrHeight = 0.5f;
+        private static float _qrRescaleFactor = 0.3f;
         private static float _cubeLength;
         private static string _qrBaseStlFileName = "base.stl";
         static void Main(string[] args)
         {
             QRCodeGenerator qrGenerator = new QRCodeGenerator();
-            QRCodeData qrCodeData = qrGenerator.CreateQrCode("https://kiai.ge/manual", QRCodeGenerator.ECCLevel.M);
+            QRCodeData qrCodeData = qrGenerator.CreateQrCode("ტესტი ქართული ასოებით12!@ტესტი ქართული ასოებით12!", QRCodeGenerator.ECCLevel.M);
             QRCode qrCode = new QRCode(qrCodeData);
 
             var baseStlPath = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), $@"Files\{_qrBaseStlFileName}");
@@ -31,11 +32,14 @@ namespace QRMaker
             var qrCodeBitmap = qrCode.GetGraphic(1);
 
             var numberOfQrBlocksWidth = (float)qrCodeBitmap.Width;
-            _cubeLength = baseWidth / numberOfQrBlocksWidth;
+            _cubeLength = baseWidth / numberOfQrBlocksWidth * _qrRescaleFactor;
+
+            var qrlen = _cubeLength * numberOfQrBlocksWidth;
+            var qrCenterCoord = qrlen / 2;
 
             StlFile stlFile = new StlFile();
             stlFile.SolidName = "my-solid";
-            int borderDecrease = 3;
+            int borderDecrease = 2;
 
             for (int widthIndex = borderDecrease; widthIndex < qrCodeBitmap.Width - borderDecrease; widthIndex++)
             {
@@ -44,7 +48,7 @@ namespace QRMaker
                     var currentPixel = qrCodeBitmap.GetPixel(heightIndex, widthIndex);
                     if (currentPixel.GetBrightness() != 0)
                     {
-                        stlFile.Triangles.AddRange(BuildSquareBlock(widthIndex, heightIndex, zOffset: baseMinMaxCoords.zMax));
+                        stlFile.Triangles.AddRange(BuildSquareBlock(widthIndex, heightIndex, -((baseWidth / 2) - qrCenterCoord), -((baseWidth / 2) - qrCenterCoord), zOffset: baseMinMaxCoords.zMax));
                     }
                 }
             }
@@ -62,10 +66,10 @@ namespace QRMaker
         private static List<StlTriangle> NormalizedBaseStlTriangles(List<StlTriangle> triangles)
         {
             var normalizedTriangles = new List<StlTriangle>();
-
             var minMaxCoords = GetSolidMinMaxCoordinates(triangles);
             var xNormalizationConstant = minMaxCoords.xMax - Math.Abs(minMaxCoords.xMin) - Math.Abs(minMaxCoords.xMax);
             var yNormalizationConstant = minMaxCoords.yMax - Math.Abs(minMaxCoords.yMin) - Math.Abs(minMaxCoords.yMax);
+
 
             foreach (var triangle in triangles)
             {
